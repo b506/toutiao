@@ -253,14 +253,14 @@ def calQuestionScore(question, user, userModel):
     wordsScore = calWordsScore(user, question)
     charsScore = calCharsScore(user, question)
     likeScore = float(question['like'] - minLike) / (maxLike - minLike)
-    answerScore = float(question['answer']) / (maxAnswer - minAnswer)
-    essenceScore = float(question['essence']) / (maxEssence - minEssence)
+    answerScore = float(question['answer'] - minAnswer) / (maxAnswer - minAnswer)
+    essenceScore = float(question['essence'] - minEssence) / (maxEssence - minEssence)
 
     score = [tagScore, wordsScore, charsScore, likeScore, answerScore, essenceScore]
     return score
 
 
-def calRecommendProbability(qId, userId, questinoInfo, userInfo, userModels):
+def calRecommendProbability(qId, userId, questionInfo, userInfo, userModels):
     question = questionInfo[qId]
     user = userInfo[userId]
     model = userModels[userId]
