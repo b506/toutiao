@@ -344,13 +344,13 @@ def calQuestionScore(question, user, userModel):
 def findSimUser(userId, userInfo, userModels):
     userSimMap = getSameUserMap(userId, userInfo)
 
-    userId = ''
+    uId = ''
     for eachkey in sorted(userSimMap):
-        userId = sortedSim[eachkey]
-        if userId in userModels:
+        uId = userSimMap[eachkey]
+        if uId in userModels:
             break
 
-    return userId
+    return uId
 
 
 def calRecommendProbability(qId, userId, questionInfo, userInfo, userModels):
