@@ -267,8 +267,8 @@ def calRecommendProbability(qId, userId, questionInfo, userInfo, userModels):
 
     questionScore = calQuestionScore(question, user, model)
     weights = model['weights']
-    probability = mat(questionScore) * (mat(weights).transpose())
-    return asarray(probability)[0][0]
+    probability = mat(questionScore) * mat(weights)
+    return sigmoid(asarray(probability)[0][0])
 
 
 def writeResultFile(resultMap):
@@ -304,7 +304,7 @@ def validation():
             continue
         record = line.strip().split(',')
         pro = calRecommendProbability(record[0], record[1], questionInfo, userInfo, userModels)
-        resultMap[line.strip()] = score
+        resultMap[line.strip()] = pro
     writeResultFile(resultMap)
 
 if __name__ == '__main__':
