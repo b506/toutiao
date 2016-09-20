@@ -297,6 +297,7 @@ def buildUserSimMatrix(userInfo):
                     'score': userSim
                 })
             j += 1
+        j = 0
         i += 1
     return userSimMatrix
 
@@ -342,6 +343,7 @@ def findSimUser(qId, userId, userModels, userSimMatrix):
         userId = sortedSim[eachkey]
         if userId in userModels:
             break
+
     return userId
 
 
