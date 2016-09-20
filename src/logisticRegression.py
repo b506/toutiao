@@ -132,6 +132,10 @@ def _cal_sentence_cosine_sim(words1, words2):
     return allSum / denominator
 
 
+def _cal_words_common_sim(words1, words2):
+    return _cal_chars_common_sim(words1, words2)
+
+
 def _cal_chars_common_sim(chars1, chars2):
     charsMap = {}
     chars1List = chars1.split('/')
@@ -237,6 +241,44 @@ def constuct(inviteInfo, userInfo, questionInfo):
     return userModels
 
 
+def calUserSim(user1, user2):
+    words1 = user1['words']
+    words2 = user2['words']
+    chars1 = user1['chars']
+    chars2 = user2['chars']
+    wordsSim = _cal_words_common_sim(words1, words2)
+    charsSim = _cal_chars_common_sim(chars1, chars2)
+    return 0.5 * wordsSim + 0.5 * charsSim
+
+
+def buildUserSimMatrix(userInfo):
+    userFlagCluster = {}
+    for userId in userInfo:
+        user = userInfo[userId]
+        flags = user['flag']
+        for f in flags:
+            if f not in userFlagCluster:
+                userFlagCluster[f] = []
+            user['id'] = userId
+            userFlagCluster[f].append(user)
+
+    userSimMatrix = {}
+    for flag in userFlagCluster:
+        users = userFlagCluster[flag]
+        length = len(users)
+        i = 0
+        for i in xrange(length):
+            ui = users[i]
+            userSimMatrix[ui['id']] = []
+            for uj in users[:i] + users[(i + 1):]:
+                userSim = calUserSim(ui, uj)
+                userSimMatrix[ui['id']].append({
+                    'id': uj['id'],
+                    'score': userSim
+                })
+    return userSimMatrix
+
+
 def getUserModels(userInfo, questionInfo, inviteInfo):
     return constuct(inviteInfo, userInfo, questionInfo)
 
@@ -252,15 +294,38 @@ def calQuestionScore(question, user, userModel):
     tagScore = calTagScore(user, question)
     wordsScore = calWordsScore(user, question)
     charsScore = calCharsScore(user, question)
-    likeScore = float(question['like'] - minLike) / (maxLike - minLike)
-    answerScore = float(question['answer'] - minAnswer) / (maxAnswer - minAnswer)
-    essenceScore = float(question['essence'] - minEssence) / (maxEssence - minEssence)
+    likeScore = 0.0
+    answerScore = 0.0
+    essenceScore = 0.0
+    if maxLike != minLike:
+        likeScore = float(question['like'] - minLike) / (maxLike - minLike)
+    if maxAnswer != minAnswer:
+        answerScore = float(question['answer'] - minAnswer) / (maxAnswer - minAnswer)
+    if maxEssence != minEssence:
+        essenceScore = float(question['essence'] - minEssence) / (maxEssence - minEssence)
 
     score = [tagScore, wordsScore, charsScore, likeScore, answerScore, essenceScore]
     return score
 
 
-def calRecommendProbability(qId, userId, questionInfo, userInfo, userModels):
+def findSimUser(qId, userId, userModels, userSimMatrix):
+    simList = userSimMatrix[userId]
+    sortedSim = {}
+
+    for u in simList:
+        sortedSim[u['score']] = u['id']
+
+    userId = ''
+    for eachkey in sorted(sortedSim):
+        userId = sortedSim[eachkey]
+        if userId in userModels:
+            break
+    return userId
+
+
+def calRecommendProbability(qId, userId, questionInfo, userInfo, userModels, userSimMatrix):
+    if userId not in userModels:
+        userId = findSimUser(qId, userId, userModels, userSimMatrix)
     question = questionInfo[qId]
     user = userInfo[userId]
     model = userModels[userId]
@@ -291,6 +356,10 @@ def validation():
     inviteInfo = readInviteInfo()
     logger.info('read file finished!')
 
+    logger.info('build user sim matrix...')
+    userSimMatrix = buildUserSimMatrix(userInfo)
+    logger.info('build user sim matrix finished!')
+
     logger.info('construct user model...')
     userModels = getUserModels(userInfo, questionInfo, inviteInfo)
     logger.info('construct user model finished!')
@@ -303,7 +372,8 @@ def validation():
             count = 1
             continue
         record = line.strip().split(',')
-        pro = calRecommendProbability(record[0], record[1], questionInfo, userInfo, userModels)
+        pro = calRecommendProbability(
+            record[0], record[1], questionInfo, userInfo, userModels, userSimMatrix)
         resultMap[line.strip()] = pro
     writeResultFile(resultMap)
 
