@@ -273,6 +273,16 @@ def calUserSim(user1, user2):
     return 0.2 * wordsSim + 0.2 * charsSim + 0.6 * tagSim
 
 
+def getSameUserMap(userId, userInfo):
+    sameUserMap = {}
+    user = userInfo[userId]
+    for uId in userInfo:
+        if userId != uId:
+            userSim = calUserSim(userInfo[uId], user)
+            sameUserMap[userSim] = uId
+    return sameUserMap
+
+
 def buildUserSimMatrix(userInfo):
     userSimMatrix = {}
 
@@ -331,15 +341,11 @@ def calQuestionScore(question, user, userModel):
     return score
 
 
-def findSimUser(qId, userId, userModels, userSimMatrix):
-    simList = userSimMatrix[userId]
-    sortedSim = {}
-
-    for u in simList:
-        sortedSim[u['score']] = u['id']
+def findSimUser(userId, userInfo, userModels):
+    userSimMap = getSameUserMap(userId, userInfo)
 
     userId = ''
-    for eachkey in sorted(sortedSim):
+    for eachkey in sorted(userSimMap):
         userId = sortedSim[eachkey]
         if userId in userModels:
             break
@@ -347,9 +353,9 @@ def findSimUser(qId, userId, userModels, userSimMatrix):
     return userId
 
 
-def calRecommendProbability(qId, userId, questionInfo, userInfo, userModels, userSimMatrix):
+def calRecommendProbability(qId, userId, questionInfo, userInfo, userModels):
     if userId not in userModels:
-        userId = findSimUser(qId, userId, userModels, userSimMatrix)
+        userId = findSimUser(userId, userInfo, userModels)
     question = questionInfo[qId]
     user = userInfo[userId]
     model = userModels[userId]
@@ -380,9 +386,9 @@ def validation():
     inviteInfo = readInviteInfo()
     logger.info('read file finished!')
 
-    logger.info('build user sim matrix...')
-    userSimMatrix = buildUserSimMatrix(userInfo)
-    logger.info('build user sim matrix finished!')
+    #logger.info('build user sim matrix...')
+    #userSimMatrix = buildUserSimMatrix(userInfo)
+    #logger.info('build user sim matrix finished!')
 
     logger.info('construct user model...')
     userModels = getUserModels(userInfo, questionInfo, inviteInfo)
@@ -397,7 +403,7 @@ def validation():
             continue
         record = line.strip().split(',')
         pro = calRecommendProbability(
-            record[0], record[1], questionInfo, userInfo, userModels, userSimMatrix)
+            record[0], record[1], questionInfo, userInfo, userModels)
         resultMap[line.strip()] = pro
     writeResultFile(resultMap)
 
