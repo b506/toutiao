@@ -241,41 +241,63 @@ def constuct(inviteInfo, userInfo, questionInfo):
     return userModels
 
 
+def calUserTagSim(flag1, flag2):
+    flagMap = {}
+    for f in flag1:
+        flagMap[f] = 1
+    for f in flag2:
+        if f in flag1:
+            flagMap[f] += 1
+        else:
+            flagMap[f] = 1
+    count = 0
+    length = 0
+    for f in flagMap:
+        length += 1
+        if flagMap[f] == 2:
+            count += 1
+
+    return float(count) / length
+
+
 def calUserSim(user1, user2):
     words1 = user1['words']
     words2 = user2['words']
     chars1 = user1['chars']
     chars2 = user2['chars']
+    flags1 = user1['flag']
+    flags2 = user2['flag']
     wordsSim = _cal_words_common_sim(words1, words2)
     charsSim = _cal_chars_common_sim(chars1, chars2)
-    return 0.5 * wordsSim + 0.5 * charsSim
+    tagSim = calUserTagSim(flags1, flags2)
+    return 0.2 * wordsSim + 0.2 * charsSim + 0.6 * tagSim
 
 
 def buildUserSimMatrix(userInfo):
-    userFlagCluster = {}
+    userSimMatrix = {}
+
+    allusers = []
     for userId in userInfo:
         user = userInfo[userId]
-        flags = user['flag']
-        for f in flags:
-            if f not in userFlagCluster:
-                userFlagCluster[f] = []
-            user['id'] = userId
-            userFlagCluster[f].append(user)
+        user['id'] = userId
+        allusers.append(user)
 
-    userSimMatrix = {}
-    for flag in userFlagCluster:
-        users = userFlagCluster[flag]
-        length = len(users)
-        i = 0
-        for i in xrange(length):
-            ui = users[i]
-            userSimMatrix[ui['id']] = []
-            for uj in users[:i] + users[(i + 1):]:
+    i = 0
+    j = 0
+    length = len(allusers)
+    while i < length:
+        ui = allusers[i]
+        userSimMatrix[ui['id']] = []
+        while j < length:
+            if j != i:
+                uj = allusers[j]
                 userSim = calUserSim(ui, uj)
                 userSimMatrix[ui['id']].append({
                     'id': uj['id'],
                     'score': userSim
                 })
+            j += 1
+        i += 1
     return userSimMatrix
 
 
