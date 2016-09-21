@@ -76,7 +76,7 @@ def calWordsScore(user, question):
     userDesc = user['words']
     questionDesc = question['words']
     if userDesc is not None and questionDesc is not None:
-        return _cal_sentence_cosine_sim(userDesc, questionDesc)
+        return _cal_words_common_sim(userDesc, questionDesc)
     return 0.0
 
 
@@ -385,10 +385,6 @@ def validation():
     questionInfo = readQuestionInfo()
     inviteInfo = readInviteInfo()
     logger.info('read file finished!')
-
-    #logger.info('build user sim matrix...')
-    #userSimMatrix = buildUserSimMatrix(userInfo)
-    #logger.info('build user sim matrix finished!')
 
     logger.info('construct user model...')
     userModels = getUserModels(userInfo, questionInfo, inviteInfo)
